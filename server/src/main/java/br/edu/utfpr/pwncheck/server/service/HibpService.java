@@ -1,6 +1,10 @@
 package br.edu.utfpr.pwncheck.server.service;
 
+import io.github.cdimascio.dotenv.Dotenv;
+import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.web.header.Header;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -8,12 +12,17 @@ import reactor.core.publisher.Mono;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.util.concurrent.TimeUnit;
+
+@RequiredArgsConstructor
 
 @Service
 public class HibpService {
 
     private final WebClient webClient = WebClient.create("https://api.pwnedpasswords.com/range/");
     private final WebClient webClientEmail = WebClient.create("https://haveibeenpwned.com/api/v3/breachedaccount/");
+
+    private final Dotenv dotenv;
 
     public boolean isPasswordPwned(String password) {
         try {
@@ -48,7 +57,7 @@ public class HibpService {
 
     public String isEmailPwned(String email) {
         try {
-            String apiKey = "senha";
+            String apiKey = dotenv.get("key");
             String userAgent = "UTFPR-PwnCheck-App";
 
             return webClientEmail.get()

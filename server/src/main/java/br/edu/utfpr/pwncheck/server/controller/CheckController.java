@@ -1,18 +1,17 @@
 package br.edu.utfpr.pwncheck.server.controller;
 import br.edu.utfpr.pwncheck.server.service.HibpService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+
+@RequiredArgsConstructor
 
 @RestController
 @RequestMapping("/api")
 public class CheckController {
 
     private final HibpService hibpService;
-
-    public CheckController(HibpService hibpService) {
-        this.hibpService = hibpService;
-    }
 
     @PostMapping("/check")
     public Map<String, Object> checkPassword(@RequestBody Map<String, String> body) {

@@ -26,7 +26,7 @@ export const SearchForm = () => {
         setIsLoading(false);
         toast({
           title: "Busca Concluída",
-          description: `O email teve ${response} \nVazamentos`,
+          description: `O email teve vazamentos`,
         });
       }, 2000);
     } else {

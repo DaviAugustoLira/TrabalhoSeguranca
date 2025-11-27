@@ -1,8 +1,10 @@
 package br.edu.utfpr.pwncheck.server.controller;
+import br.edu.utfpr.pwncheck.server.model.dto.EmailDTO;
 import br.edu.utfpr.pwncheck.server.service.HibpService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RequiredArgsConstructor
@@ -31,9 +33,9 @@ public class CheckController {
     @PostMapping("/email")
     public Map<String, Object> checkEmail(@RequestBody Map<String, String> body) {
         String email = body.get("email");
-        String result = hibpService.isEmailPwned(email);
+        List<EmailDTO> result = hibpService.isEmailPwned(email);
 
-        boolean pwned = !result.startsWith("Erro") && !result.isBlank();
+        boolean pwned = !result.isEmpty()   ;
 
         return Map.of(
                 "email", email,

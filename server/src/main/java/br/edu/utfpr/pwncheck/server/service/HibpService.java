@@ -1,8 +1,10 @@
 package br.edu.utfpr.pwncheck.server.service;
 
+import br.edu.utfpr.pwncheck.server.model.dto.EmailDTO;
 import io.github.cdimascio.dotenv.Dotenv;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.web.header.Header;
@@ -12,6 +14,8 @@ import reactor.core.publisher.Mono;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @RequiredArgsConstructor
@@ -54,22 +58,25 @@ public class HibpService {
         }
     }
 
-    public String isEmailPwned(String email) {
+    public List<EmailDTO> isEmailPwned(String email) {
         try {
             String apiKey = dotenv.get("key");
             String userAgent = "UTFPR-PwnCheck-App";
 
             return webClient.get()
-                    .uri("https://haveibeenpwned.com/api/v3/breachedaccount/{email}?truncateResponse=false", email)
+                    .uri("https://haveibeenpwned.com/api/v3/breachedaccount/{email}", email)
                     .header("hibp-api-key", apiKey)
                     .header("user-agent", userAgent)
                     .accept(MediaType.APPLICATION_JSON)
                     .retrieve()
-                    .bodyToMono(String.class)
-                    .onErrorResume(e -> Mono.just("Erro: " + e.getMessage()))
+                    .bodyToMono(new ParameterizedTypeReference<List<EmailDTO>>() {})
+                    .onErrorResume(e -> {
+                        System.out.println("Erro ao consultar HIBP: " + e.getMessage());
+                        return Mono.just(Collections.emptyList());
+                    })
                     .block();
         } catch (Exception e) {
-            return "Erro ao consultar HIBP: " + e.getMessage();
+            throw new RuntimeException("Erro ao comunicar com a API do HIPB");
         }
     }
 

@@ -4,3 +4,16 @@ export interface IResponse<T = any> {
   message?: string;
   data?: T
 }
+
+
+export interface ResultResponse{
+  Name: string
+}
+
+export interface EmailResponse{
+  email: string;
+  pwned: boolean;
+  result: ResultResponse;
+}
+
+

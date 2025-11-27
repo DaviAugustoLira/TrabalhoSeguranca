@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Mail, Lock, Search, Loader2, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { SecurityService } from "@/services/security-service"
 
 export const SearchForm = () => {
   const [emailValue, setEmailValue] = useState("");
@@ -12,18 +13,31 @@ export const SearchForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
+  const { checkPassword, checkEmail } = SecurityService
+
   const handleEmailSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      toast({
-        title: "Busca Concluída",
-        description: `Verificando vazamentos para: ${emailValue}`,
-      });
-    }, 2000);
+
+    const response = await checkEmail(emailValue)
+
+    if (response.status === 200) {
+      setTimeout(() => {
+        setIsLoading(false);
+        toast({
+          title: "Busca Concluída",
+          description: `O email teve ${response} \nVazamentos`,
+        });
+      }, 2000);
+    } else {
+      setTimeout(() => {
+        setIsLoading(false);
+        toast({
+          title: "Erro ao realizar a busca",
+          description: `Erro!`,
+        });
+      }, 2000);
+    }
   };
 
   const handlePasswordSearch = async (e: React.FormEvent) => {

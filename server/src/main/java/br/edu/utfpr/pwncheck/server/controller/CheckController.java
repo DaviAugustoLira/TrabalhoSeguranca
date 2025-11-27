@@ -15,13 +15,11 @@ public class CheckController {
 
     @PostMapping("/check")
     public Map<String, Object> checkPassword(@RequestBody Map<String, String> body) {
-        String email = body.get("email");
         String password = body.get("password");
 
         boolean pwned = hibpService.isPasswordPwned(password);
 
         return Map.of(
-                "email", email,
                 "pwned", pwned,
                 "message", pwned ?
                         "Senha encontrada em vazamentos!" :

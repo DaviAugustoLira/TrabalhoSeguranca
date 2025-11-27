@@ -19,8 +19,7 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class HibpService {
 
-    private final WebClient webClient = WebClient.create("https://api.pwnedpasswords.com/range/");
-    private final WebClient webClientEmail = WebClient.create("https://haveibeenpwned.com/api/v3/breachedaccount/");
+    private final WebClient webClient;
 
     private final Dotenv dotenv;
 
@@ -36,7 +35,7 @@ public class HibpService {
 
             // Chama API
             String response = webClient.get()
-                    .uri(prefix)
+                    .uri("https://api.pwnedpasswords.com/range/"+prefix)
                     .retrieve()
                     .bodyToMono(String.class)
                     .block();
@@ -60,11 +59,8 @@ public class HibpService {
             String apiKey = dotenv.get("key");
             String userAgent = "UTFPR-PwnCheck-App";
 
-            return webClientEmail.get()
-                    .uri(uriBuilder -> uriBuilder
-                            .path("/{email}")
-                            .queryParam("truncateResponse", "false")
-                            .build(email))
+            return webClient.get()
+                    .uri("https://haveibeenpwned.com/api/v3/breachedaccount/{email}?truncateResponse=false", email)
                     .header("hibp-api-key", apiKey)
                     .header("user-agent", userAgent)
                     .accept(MediaType.APPLICATION_JSON)

@@ -24,10 +24,11 @@ public class CheckController {
                 "email", email,
                 "pwned", pwned,
                 "message", pwned ?
-                        "⚠️ Senha encontrada em vazamentos!" :
-                        "✅ Senha não encontrada em vazamentos conhecidos."
+                        "Senha encontrada em vazamentos!" :
+                        "Senha não encontrada em vazamentos conhecidos."
         );
     }
+
 
     @PostMapping("/email")
     public Map<String, Object> checkEmail(@RequestBody Map<String, String> body) {

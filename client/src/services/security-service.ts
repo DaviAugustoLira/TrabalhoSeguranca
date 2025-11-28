@@ -8,7 +8,7 @@ export const SecurityService = {
     password: string
   ): Promise<IResponse<EmailResponse>> => {
     try {
-      const response = await api.post(`${baseURL}/check`, {
+      const response : IResponse<EmailResponse> = await api.post(`${baseURL}/check`, {
         password,
       });
 

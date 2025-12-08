@@ -1,15 +1,21 @@
 package br.edu.utfpr.pwncheck.server.service;
 
+import br.edu.utfpr.pwncheck.server.error.exception.TooManyRequest;
 import br.edu.utfpr.pwncheck.server.model.dto.EmailDTO;
 import io.github.cdimascio.dotenv.Dotenv;
+import io.netty.handler.codec.http.multipart.HttpPostRequestDecoder;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.web.header.Header;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpClientErrorException.TooManyRequests;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
 
 import java.nio.charset.StandardCharsets;
@@ -59,24 +65,47 @@ public class HibpService {
     }
 
     public List<EmailDTO> isEmailPwned(String email) {
-        try {
-            String apiKey = dotenv.get("key");
-            String userAgent = "UTFPR-PwnCheck-App";
+        String apiKey = dotenv.get("key");
+        String userAgent = "UTFPR-PwnCheck-App";
 
+        try {
             return webClient.get()
                     .uri("https://haveibeenpwned.com/api/v3/breachedaccount/{email}", email)
                     .header("hibp-api-key", apiKey)
                     .header("user-agent", userAgent)
                     .accept(MediaType.APPLICATION_JSON)
                     .retrieve()
+                    .onStatus(status -> status.is4xxClientError(), resp -> {
+                        if (resp.statusCode().value() == 404) {
+                            // 404 → Nenhum vazamento
+                            return Mono.error(new RuntimeException("NOT_FOUND"));
+                        }
+                        if (resp.statusCode().value() == 429) {
+                            String retryAfter = resp.headers().asHttpHeaders().getFirst("Retry-After");
+                            String msg = "Limite de requisições atingido (429)";
+                            if (retryAfter != null) {
+                                msg += ", tente novamente em " + retryAfter + " segundos";
+                            }
+                            return Mono.error(new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, msg));
+                        }
+                        return Mono.error(new RuntimeException("Erro 4xx ao consultar HIBP: " + resp.statusCode()));
+                    })
                     .bodyToMono(new ParameterizedTypeReference<List<EmailDTO>>() {})
                     .onErrorResume(e -> {
-                        System.out.println("Erro ao consultar HIBP: " + e.getMessage());
-                        return Mono.just(Collections.emptyList());
+                        // Se for 404, retornamos lista vazia
+                        if (e.getMessage() != null && e.getMessage().contains("NOT_FOUND")) {
+                            return Mono.just(Collections.emptyList());
+                        }
+                        // Outros erros propagam
+                        return Mono.error(e);
                     })
                     .block();
+
+        } catch (ResponseStatusException e) {
+            // Aqui podemos tratar o 429 e lançar de novo
+            throw e;
         } catch (Exception e) {
-            throw new RuntimeException("Erro ao comunicar com a API do HIPB");
+            throw new RuntimeException("Erro ao comunicar com a API do HIBP", e);
         }
     }
 

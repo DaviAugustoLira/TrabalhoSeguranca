@@ -16,29 +16,37 @@ export const SearchForm = () => {
   const { checkPassword, checkEmail } = SecurityService
 
   const handleEmailSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
+  e.preventDefault();
+  setIsLoading(true);
 
-    const response = await checkEmail(emailValue)
+  const response = await checkEmail(emailValue);
 
-    if (response.status === 200) {
-      setTimeout(() => {
-        setIsLoading(false);
-        toast({
-          title: "Busca Concluída",
-          description: `O email teve ${response} \nVazamentos`,
-        });
-      }, 2000);
-    } else {
-      setTimeout(() => {
-        setIsLoading(false);
-        toast({
-          title: "Erro ao realizar a busca",
-          description: `Erro!`,
-        });
-      }, 2000);
-    }
-  };
+  if (response.status === 200) {
+    const count = response.data.result.length;
+    const breaches = response.data.result.map(b => b.Name).join(", ");
+
+    setTimeout(() => {
+      setIsLoading(false);
+      toast({
+        title: "Busca Concluída",
+        description: 
+          count > 0 
+            ? `O email teve ${count} vazamentos:\n${breaches}` 
+            : "Nenhum vazamento encontrado.",
+      });
+    }, 2000);
+
+  } else {
+    setTimeout(() => {
+      setIsLoading(false);
+      toast({
+        title: "Erro ao realizar a busca",
+        description: `Erro!`,
+      });
+    }, 2000);
+  }
+};
+
 
   const handlePasswordSearch = async (e: React.FormEvent) => {
     e.preventDefault();

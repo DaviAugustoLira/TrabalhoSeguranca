@@ -14,6 +14,7 @@ export const SearchForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSecure, setIsSecure] = useState(false);
   const [isNotSecure, setIsNotSecure] = useState(false);
+  const [breaches, setBreaches] = useState<{ Name: string }[]>([]);
   const { toast } = useToast();
 
   const { checkPassword, checkEmail } = SecurityService
@@ -22,8 +23,8 @@ export const SearchForm = () => {
   const [isPasswordNotSecure, setIsPasswordNotSecure] = useState(false);
 
   const handleEmailSearch = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setIsLoading(true);
+    e.preventDefault();
+    setIsLoading(true);
 
     // limpar estado anterior
     setIsSecure(false);
@@ -35,19 +36,20 @@ export const SearchForm = () => {
 
       if (response.status === 200) {
         if (valueApi.result.length === 0) {
-          setIsSecure(true);     // email NÃO encontrado = seguro
+          setIsSecure(true);
           setIsNotSecure(false);
+          setBreaches([]);          // limpa lista
         } else {
-          setIsNotSecure(true);  // email encontrado = vazado
+          setIsNotSecure(true);
           setIsSecure(false);
+          setBreaches(valueApi.result);   // salva lista recebida
         }
-
         toast({
           title: "Busca concluída",
           description: "Verificação realizada com sucesso.",
         });
-      } 
-      else if(response.status == 429){
+      }
+      else if (response.status == 429) {
         toast({
           title: "Erro ao realizar a busca",
           description: "Tente Novamente em alguns segundos",
@@ -82,7 +84,7 @@ export const SearchForm = () => {
       console.log(valueApi)
       if (response.status === 200) {
         if (!valueApi.pwned || valueApi.pwned.length === 0) {
-          setIsPasswordSecure(true);    
+          setIsPasswordSecure(true);
           setIsPasswordNotSecure(false);
         } else {
           setIsPasswordNotSecure(true);  // senha encontrada = vazada
@@ -128,12 +130,12 @@ export const SearchForm = () => {
                 Senha
               </TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="email" className="space-y-4">
               <div className="space-y-2">
                 <h3 className="text-2xl font-bold">Verificar Email</h3>
               </div>
-              
+
               <form onSubmit={handleEmailSearch} className="space-y-4">
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -146,9 +148,9 @@ export const SearchForm = () => {
                     required
                   />
                 </div>
-                
-                <Button 
-                  type="submit" 
+
+                <Button
+                  type="submit"
                   className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold glow-cyan"
                   disabled={isLoading}
                 >
@@ -181,30 +183,47 @@ export const SearchForm = () => {
               )}
               {isNotSecure && (
                 <div className="mt-12 p-6 rounded-lg bg-red-500/10 border border-red-900">
-                  <div className="flex items-start gap-4">
-                    <div className="space-y-2">
-                      <h4 className="text-lg font-semibold text-red-700">Email Vazado</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Este email apareceu em vazamentos conhecidos. Recomenda-se alterar sua senha. 
-                        <a
-                          href="https://cartilha.cert.br/dicas-rapidas/#:~:text=Use%20senhas%20longas%20compostas%20de,a%20superfície%20da%20tela%20limpos." target="_blank" rel="noopener noreferrer"
-                          className="inline-block text-sm text-primary hover:underline ml-1"
+                  <div className="space-y-4">
+
+                    <h4 className="text-lg font-semibold text-red-700">Email Vazado</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Este email apareceu em vazamentos conhecidos. Recomenda-se alterar sua senha.
+                    </p>
+
+                    {/* Lista de vazamentos */}
+                    <ul className="mt-4 space-y-2">
+                      {breaches.map((b, index) => (
+                        <li
+                          key={index}
+                          className="p-2 rounded bg-red-500/20 border border-red-500/30 text-sm text-red-600"
                         >
-                          Dicas para proteção de contas de aplicativos e sites.
-                        </a>
-                        <div className="h-[2px] w-full bg-gradient-to-r from-cyan-100 to-blue-900 mt-2 rounded-full" />
-                      </p>
-                    </div>
+                          {b.Name}
+                        </li>
+                      ))}
+                    </ul>
+
+                    <a
+                      href="https://cartilha.cert.br/dicas-rapidas/#:~:text=Use%20senhas%20longas%20compostas%20de,a%20superfície%20da%20tela%20limpos."
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block text-sm text-primary hover:underline mt-4"
+                    >
+                      Dicas para proteção de contas de aplicativos e sites.
+                    </a>
+
+                    <div className="h-[2px] w-full bg-gradient-to-r from-cyan-100 to-blue-900 mt-2 rounded-full" />
+
                   </div>
                 </div>
               )}
+
             </TabsContent>
-            
+
             <TabsContent value="password" className="space-y-4">
               <div className="space-y-2">
                 <h3 className="text-2xl font-bold">Verificar Senha</h3>
               </div>
-              
+
               <form onSubmit={handlePasswordSearch} className="space-y-4">
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -217,7 +236,7 @@ export const SearchForm = () => {
                     required
                   />
                 </div>
-                
+
                 <div className="p-3 rounded-lg bg-muted/50 border border-border">
                   <p className="text-sm text-muted-foreground flex items-start gap-2">
                     <Shield className="w-4 h-4 mt-0.5 text-success flex-shrink-0" />
@@ -227,7 +246,7 @@ export const SearchForm = () => {
                   </p>
                 </div>
 
-                { isPasswordSecure && (
+                {isPasswordSecure && (
                   <div className="mt-6 p-6 rounded-lg bg-success/10 border border-success/20">
                     <div className="flex items-start gap-4">
                       <Shield className="w-6 h-6 text-success flex-shrink-0 mt-1" />
@@ -241,7 +260,7 @@ export const SearchForm = () => {
                   </div>
                 )}
 
-                { isPasswordNotSecure && (
+                {isPasswordNotSecure && (
                   <div className="mt-6 p-6 rounded-lg bg-red-500/10 border border-red-900">
                     <div className="flex items-start gap-4">
                       <div className="space-y-2">
@@ -249,8 +268,8 @@ export const SearchForm = () => {
                         <p className="text-sm text-muted-foreground">
                           Esta senha apareceu em vazamentos conhecidos. Recomenda-se alterá-la.
                           <a
-                          href="https://cartilha.cert.br/dicas-rapidas/#:~:text=Use%20senhas%20longas%20compostas%20de,a%20superfície%20da%20tela%20limpos." target="_blank" rel="noopener noreferrer"
-                          className="inline-block text-sm text-primary hover:underline ml-1"
+                            href="https://cartilha.cert.br/dicas-rapidas/#:~:text=Use%20senhas%20longas%20compostas%20de,a%20superfície%20da%20tela%20limpos." target="_blank" rel="noopener noreferrer"
+                            className="inline-block text-sm text-primary hover:underline ml-1"
                           >
                             Dicas para proteção de contas de aplicativos e sites.
                           </a>
@@ -260,9 +279,9 @@ export const SearchForm = () => {
                     </div>
                   </div>
                 )}
-                
-                <Button 
-                  type="submit" 
+
+                <Button
+                  type="submit"
                   className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold glow-cyan"
                   disabled={isLoading}
                 >

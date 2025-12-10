@@ -6,60 +6,111 @@ import { Card } from "@/components/ui/card";
 import { Mail, Lock, Search, Loader2, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SecurityService } from "@/services/security-service"
+import { EmailResponse, IResponse } from "@/commons/types";
 
 export const SearchForm = () => {
   const [emailValue, setEmailValue] = useState("");
   const [passwordValue, setPasswordValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isSecure, setIsSecure] = useState(false);
+  const [isNotSecure, setIsNotSecure] = useState(false);
   const { toast } = useToast();
 
   const { checkPassword, checkEmail } = SecurityService
+
+  const [isPasswordSecure, setIsPasswordSecure] = useState(false);
+  const [isPasswordNotSecure, setIsPasswordNotSecure] = useState(false);
 
   const handleEmailSearch = async (e: React.FormEvent) => {
   e.preventDefault();
   setIsLoading(true);
 
-  const response = await checkEmail(emailValue);
+    // limpar estado anterior
+    setIsSecure(false);
+    setIsNotSecure(false);
 
-  if (response.status === 200) {
-    const count = response.data.result.length;
-    const breaches = response.data.result.map(b => b.Name).join(", ");
+    try {
+      const response: IResponse = await checkEmail(emailValue);
+      const valueApi: EmailResponse = response.data;
 
-    setTimeout(() => {
-      setIsLoading(false);
-      toast({
-        title: "Busca Concluída",
-        description: 
-          count > 0 
-            ? `O email teve ${count} vazamentos:\n${breaches}` 
-            : "Nenhum vazamento encontrado.",
-      });
-    }, 2000);
+      if (response.status === 200) {
+        if (valueApi.result.length === 0) {
+          setIsSecure(true);     // email NÃO encontrado = seguro
+          setIsNotSecure(false);
+        } else {
+          setIsNotSecure(true);  // email encontrado = vazado
+          setIsSecure(false);
+        }
 
-  } else {
-    setTimeout(() => {
-      setIsLoading(false);
+        toast({
+          title: "Busca concluída",
+          description: "Verificação realizada com sucesso.",
+        });
+      } 
+      else if(response.status == 429){
+        toast({
+          title: "Erro ao realizar a busca",
+          description: "Tente Novamente em alguns segundos",
+          variant: "destructive",
+        });
+      }
+      else {
+        throw new Error("Resposta inválida da API");
+      }
+    } catch (error) {
       toast({
         title: "Erro ao realizar a busca",
-        description: `Erro!`,
+        description: "Não foi possível verificar o email.",
+        variant: "destructive",
       });
-    }, 2000);
-  }
-};
-
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handlePasswordSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
+
+    setIsPasswordSecure(false);
+    setIsPasswordNotSecure(false);
+
+    try {
+      const response: IResponse = await checkPassword(passwordValue);
+      const valueApi = response.data;
+
+      console.log(valueApi)
+      if (response.status === 200) {
+        if (!valueApi.pwned || valueApi.pwned.length === 0) {
+          setIsPasswordSecure(true);    
+          setIsPasswordNotSecure(false);
+        } else {
+          setIsPasswordNotSecure(true);  // senha encontrada = vazada
+          setIsPasswordSecure(false);
+        }
+
+        toast({
+          title: "Busca concluída",
+          description: "Verificação realizada com sucesso.",
+        });
+      } else if (response.status === 429) {
+        toast({
+          title: "Erro ao realizar a busca",
+          description: "Tente novamente em alguns segundos",
+          variant: "destructive",
+        });
+      } else {
+        throw new Error("Resposta inválida da API");
+      }
+    } catch (error) {
       toast({
-        title: "Busca Concluída",
-        description: "Senha verificada com segurança.",
+        title: "Erro ao verificar senha",
+        description: "Não foi possível verificar a senha.",
+        variant: "destructive",
       });
-    }, 2000);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -114,6 +165,39 @@ export const SearchForm = () => {
                   )}
                 </Button>
               </form>
+
+              {isSecure && (
+                <div className="mt-12 p-6 rounded-lg bg-success/10 border border-success/20">
+                  <div className="flex items-start gap-4">
+                    <Shield className="w-6 h-6 text-success flex-shrink-0 mt-1" />
+                    <div className="space-y-2">
+                      <h4 className="text-lg font-semibold text-success">Email Seguro</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Não foi encontrado o email em nenhuma fonte de vazamento.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {isNotSecure && (
+                <div className="mt-12 p-6 rounded-lg bg-red-500/10 border border-red-900">
+                  <div className="flex items-start gap-4">
+                    <div className="space-y-2">
+                      <h4 className="text-lg font-semibold text-red-700">Email Vazado</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Este email apareceu em vazamentos conhecidos. Recomenda-se alterar sua senha. 
+                        <a
+                          href="https://cartilha.cert.br/dicas-rapidas/#:~:text=Use%20senhas%20longas%20compostas%20de,a%20superfície%20da%20tela%20limpos." target="_blank" rel="noopener noreferrer"
+                          className="inline-block text-sm text-primary hover:underline ml-1"
+                        >
+                          Dicas para proteção de contas de aplicativos e sites.
+                        </a>
+                        <div className="h-[2px] w-full bg-gradient-to-r from-cyan-100 to-blue-900 mt-2 rounded-full" />
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </TabsContent>
             
             <TabsContent value="password" className="space-y-4">
@@ -142,6 +226,40 @@ export const SearchForm = () => {
                     </span>
                   </p>
                 </div>
+
+                { isPasswordSecure && (
+                  <div className="mt-6 p-6 rounded-lg bg-success/10 border border-success/20">
+                    <div className="flex items-start gap-4">
+                      <Shield className="w-6 h-6 text-success flex-shrink-0 mt-1" />
+                      <div className="space-y-2">
+                        <h4 className="text-lg font-semibold text-success">Senha Segura</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Nenhum vazamento encontrado para esta senha.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                { isPasswordNotSecure && (
+                  <div className="mt-6 p-6 rounded-lg bg-red-500/10 border border-red-900">
+                    <div className="flex items-start gap-4">
+                      <div className="space-y-2">
+                        <h4 className="text-lg font-semibold text-red-700">Senha Vazada</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Esta senha apareceu em vazamentos conhecidos. Recomenda-se alterá-la.
+                          <a
+                          href="https://cartilha.cert.br/dicas-rapidas/#:~:text=Use%20senhas%20longas%20compostas%20de,a%20superfície%20da%20tela%20limpos." target="_blank" rel="noopener noreferrer"
+                          className="inline-block text-sm text-primary hover:underline ml-1"
+                          >
+                            Dicas para proteção de contas de aplicativos e sites.
+                          </a>
+                          <div className="h-[2px] w-full bg-gradient-to-r from-cyan-100 to-blue-900 mt-2 rounded-full" />
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 
                 <Button 
                   type="submit" 

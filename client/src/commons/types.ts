@@ -5,7 +5,6 @@ export interface IResponse<T = any> {
   data?: T
 }
 
-
 export interface ResultResponse{
   Name: string
 }
@@ -13,7 +12,7 @@ export interface ResultResponse{
 export interface EmailResponse{
   email: string;
   pwned: boolean;
-  result: ResultResponse;
+  result: ResultResponse[];
 }
 
 

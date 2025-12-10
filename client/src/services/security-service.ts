@@ -1,16 +1,14 @@
 import { api } from "../lib/axios";
-import type { IResponse } from "@/commons/types";
+import type { EmailResponse, IResponse } from "@/commons/types";
 
 const baseURL = "/api";
 
 export const SecurityService = {
   checkPassword: async (
-    email: string,
     password: string
-  ): Promise<IResponse<any>> => {
+  ): Promise<IResponse<EmailResponse>> => {
     try {
-      const response = await api.post(`${baseURL}/check`, {
-        email,
+      const response : IResponse = await api.post(`${baseURL}/check`, {
         password,
       });
 
